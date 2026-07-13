@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hiểu popstate qua Tab</title>
+    <style>
+        /* ----- Cơ bản ----- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f2f5f9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.10);
+            padding: 32px 34px 40px;
+            transition: 0.2s;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0a1e2f;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: #2563eb;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 2px 16px;
+            border-radius: 30px;
+            margin-left: 6px;
+        }
+
+        .sub {
+            color: #3d5570;
+            margin-top: 6px;
+            background: #eff6ff;
+            padding: 12px 18px;
+            border-radius: 14px;
+            border-left: 5px solid #2563eb;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* ----- Tab ----- */
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin: 28px 0 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 2px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 24px;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            font-weight: 600;
+            color: #536b84;
+            cursor: pointer;
+            border-radius: 30px 30px 0 0;
+            transition: 0.15s;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            background: #eef3f9;
+            color: #1a314b;
+        }
+
+        .tab-btn.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        .tab-btn .tab-index {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 0 10px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
+        .tab-btn.active .tab-index {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ----- Nội dung tab ----- */
+        .tab-content {
+            background: #fafcff;
+            border-radius: 18px;
+            padding: 24px 28px;
+            min-height: 200px;
+            border: 1px solid #e6edf6;
+            margin-top: 6px;
+            transition: 0.2s;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fade 0.2s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fade {
+            0% {
+                opacity: 0.5;
+                transform: translateY(6px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tab-pane h2 {
+            font-size: 22px;
+            color: #0a1e2f;
+            margin-bottom: 12px;
+        }
+
+        .tab-pane p {
+            color: #2a4058;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .tab-pane .meta {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #eef4fa;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #1a3a5a;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ----- Trạng thái & điều khiển ----- */
+        .status-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            background: #f1f6fc;
+            padding: 14px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            color: #1d3650;
+            gap: 10px;
+        }
+
+        .status-bar .info {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .status-bar .info span {
+            background: white;
+            padding: 4px 14px;
+            border-radius: 40px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .status-bar .info .label {
+            font-weight: 500;
+            color: #4f6f8f;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            background: #dce5ef;
+            color: #1f3853;
+            transition: 0.15s;
+        }
+
+        .btn:hover {
+            background: #c8d4e3;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: #1d3b5c;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #112b44;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #b7cbdd;
+        }
+        .btn-outline:hover {
+            background: #e3ecf5;
+        }
+
+        .btn-warning {
+            background: #d97706;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #b45f05;
+        }
+
+        /* ----- Log popstate ----- */
+        .log-box {
+            margin-top: 24px;
+            background: #0d1a26;
+            border-radius: 16px;
+            padding: 14px 18px;
+            max-height: 170px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #cfe0f0;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .log-box .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #1e3142;
+            display: flex;
+            gap: 12px;
+        }
+
+        .log-box .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #6b8fae;
+            min-width: 70px;
+        }
+
+        .log-msg {
+            color: #d6e8fa;
+        }
+
+        .log-msg .highlight {
+            color: #ffb347;
+        }
+
+        .log-empty {
+            color: #59758f;
+            font-style: italic;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 8px 0;
+        }
+
+        .clear-log {
+            background: #1f3346;
+            color: #b3cee6;
+            border: none;
+            padding: 2px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .clear-log:hover {
+            background: #2c4058;
+            color: white;
+        }
+
+        .footer-note {
+            margin-top: 24px;
+            background: #e9f0f8;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            border-left: 5px solid #2563eb;
+            color: #1d3b5c;
+        }
+
+        .footer-note strong {
+            color: #0a1e2f;
+        }
+
+        code {
+            background: #dce5ef;
+            padding: 1px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>
+            📑 Tab với <span style="font-weight:400;">popstate</span>
+            <span class="badge">demo</span>
+        </h1>
+        <div class="sub">
+            ⬅️ Nhấn <strong>Back / Forward</strong> trên trình duyệt hoặc dùng nút bên dưới
+            để thấy <code>popstate</code> tự động chuyển tab tương ứng.
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" id="tabHeaders">
+            <button class="tab-btn active" data-tab="tab1">🏠 Trang chủ <span class="tab-index">#1</span></button>
+            <button class="tab-btn" data-tab="tab2">📊 Thống kê <span class="tab-index">#2</span></button>
+            <button class="tab-btn" data-tab="tab3">⚙️ Cài đặt <span class="tab-index">#3</span></button>
+        </div>
+
+        <!-- Nội dung các tab -->
+        <div class="tab-content">
+            <div id="tab1" class="tab-pane active">
+                <h2>🏠 Trang chủ</h2>
+                <p>Đây là nội dung của tab <strong>Trang chủ</strong>. Khi bạn chuyển sang tab khác, chúng tôi sẽ dùng <code>pushState</code> để lưu trạng thái.</p>
+                <p>Nhấn <kbd>Back</kbd> sẽ quay lại tab này và <code>popstate</code> sẽ giúp kích hoạt nó.</p>
+                <div class="meta">📌 State hiện tại: <span id="stateInfo1">chưa có</span></div>
+            </div>
+            <div id="tab2" class="tab-pane">
+                <h2>📊 Thống kê</h2>
+                <p>Biểu đồ và số liệu thống kê giả định. Tab này minh họa việc <code>popstate</code> có thể khôi phục trạng thái xem.</p>
+                <p>Ví dụ: bạn đang xem thống kê tháng 7, khi quay lại bằng back, tab này sẽ được active lại.</p>
+                <div class="meta">📌 State hiện tại: <span id="stateInfo2">chưa có</span></div>
+            </div>
+            <div id="tab3" class="tab-pane">
+                <h2>⚙️ Cài đặt</h2>
+                <p>Trang cài đặt người dùng. Giả sử bạn đang chỉnh sửa profile, nếu nhấn back, <code>popstate</code> sẽ đưa bạn về tab trước đó.</p>
+                <p>Đây là cách các SPA (Single Page App) quản lý điều hướng mà không tải lại trang.</p>
+                <div class="meta">📌 State hiện tại: <span id="stateInfo3">chưa có</span></div>
+            </div>
+        </div>
+
+        <!-- Thanh trạng thái và điều khiển -->
+        <div class="status-bar">
+            <div class="info">
+                <span><span class="label">📍 URL:</span> <span id="displayUrl">/</span></span>
+                <span><span class="label">📦 State:</span> <span id="displayState">null</span></span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnPush">➕ pushState (tab hiện tại)</button>
+                <button class="btn btn-outline" id="btnBack">◀ Back</button>
+                <button class="btn btn-outline" id="btnForward">Forward ▶</button>
+                <button class="btn btn-warning" id="btnGoBack2">⏪ go(-2)</button>
+            </div>
+        </div>
+
+        <!-- Log popstate -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+            <div style="font-weight:600; color:#1a314b; font-size:14px;">📋 Nhật ký popstate</div>
+            <button class="clear-log" id="clearLog">🗑 Xóa</button>
+        </div>
+        <div class="log-box" id="logArea">
+            <div class="log-empty">⏳ Chưa có sự kiện popstate nào …</div>
+        </div>
+
+        <!-- Giải thích -->
+        <div class="footer-note">
+            <strong>💡 Công dụng của popstate:</strong> Lắng nghe sự kiện này cho phép bạn <strong>đồng bộ giao diện</strong> với lịch sử trình duyệt.
+            Ở ví dụ này, khi người dùng nhấn Back/Forward, <code>popstate</code> được kích hoạt và chúng ta đọc <code>event.state</code> để biết tab nào cần hiển thị.
+            Đây là nền tảng cho điều hướng trong các ứng dụng Single‑Page.
+        </div>
+
+    </div>
+
+    <!-- ─── JAVASCRIPT ─── -->
+    <script>
+        (function() {
+            'use strict';
+
+            // DOM refs
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const panes = {
+                tab1: document.getElementById('tab1'),
+                tab2: document.getElementById('tab2'),
+                tab3: document.getElementById('tab3')
+            };
+            const displayUrl = document.getElementById('displayUrl');
+            const displayState = document.getElementById('displayState');
+            const logArea = document.getElementById('logArea');
+            const clearLogBtn = document.getElementById('clearLog');
+
+            const btnPush = document.getElementById('btnPush');
+            const btnBack = document.getElementById('btnBack');
+            const btnForward = document.getElementById('btnForward');
+            const btnGoBack2 = document.getElementById('btnGoBack2');
+
+            // State info spans
+            const stateInfo1 = document.getElementById('stateInfo1');
+            const stateInfo2 = document.getElementById('stateInfo2');
+            const stateInfo3 = document.getElementById('stateInfo3');
+
+            // ─── Biến ────────────────────────────────────────────
+            let currentTab = 'tab1'; // tab đang active
+
+            // ─── Hàm chuyển tab (không dùng history) ──────────
+
+            function switchTab(tabId, updateHistory = true, stateData = null) {
+                // Nếu tab không đổi thì không làm gì
+                if (tabId === currentTab && !stateData) return;
+
+                // Ẩn tất cả pane
+                Object.keys(panes).forEach(key => {
+                    panes[key].classList.remove('active');
+                });
+                // Hiện pane mới
+                const pane = panes[tabId];
+                if (pane) pane.classList.add('active');
+
+                // Cập nhật class active cho nút
+                tabBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabId);
+                });
+
+                // Cập nhật currentTab
+                currentTab = tabId;
+
+                // Cập nhật state info trong từng pane (chỉ để hiển thị)
+                const state = history.state;
+                const stateStr = state ? JSON.stringify(state) : 'null';
+                if (stateInfo1) stateInfo1.textContent = stateStr;
+                if (stateInfo2) stateInfo2.textContent = stateStr;
+                if (stateInfo3) stateInfo3.textContent = stateStr;
+
+                // Cập nhật URL hiển thị
+                displayUrl.textContent = window.location.pathname + window.location.search || '/';
+                displayState.textContent = stateStr;
+
+                // Nếu updateHistory == true, ta dùng pushState hoặc replaceState?
+                // Thường thì khi người dùng click tab, ta pushState.
+                // Nhưng nếu đây là do popstate, ta không push lại.
+                if (updateHistory) {
+                    // Tạo state object chứa tabId
+                    const newState = { tab: tabId, timestamp: Date.now() };
+                    // Thay đổi URL để có tham số ?tab=...
+                    const url = `?tab=${tabId}`;
+                    history.pushState(newState, '', url);
+                    // Cập nhật displayState sau push
+                    displayState.textContent = JSON.stringify(newState);
+                    // Ghi log (nhưng đây là do người dùng click, không phải popstate)
+                    // Ta sẽ ghi log riêng cho hành động này
+                    addLogEntry(`🖱️ Chuyển tab → ${tabId} (pushState)`, newState);
+                }
+            }
+
+            // ─── Xử lý popstate ──────────────────────────────────
+
+            function onPopstate(event) {
+                const state = event.state;
+                // Đọc tab từ state
+                let tabId = null;
+                if (state && typeof state === 'object' && state.tab) {
+                    tabId = state.tab;
+                } else {
+                    // Nếu không có state hoặc không có tab, thử parse từ URL
+                    const params = new URLSearchParams(window.location.search);
+                    tabId = params.get('tab');
+                }
+
+                // Nếu có tabId hợp lệ và khác tab hiện tại -> chuyển
+                if (tabId && panes[tabId]) {
+                    // Chuyển tab nhưng không pushState (vì đây là popstate)
+                    switchTab(tabId, false);
+                    // Ghi log
+                    addLogEntry(`🔔 popstate → tab ${tabId}`, state);
+                } else {
+                    // Nếu không có tab hợp lệ, mặc định về tab1
+                    if (currentTab !== 'tab1') {
+                        switchTab('tab1', false);
+                        addLogEntry(`🔔 popstate (không có state) → về tab1`, state);
+                    } else {
+                        addLogEntry(`🔔 popstate (không thay đổi tab)`, state);
+                    }
+                }
+
+                // Cập nhật displayState
+                displayState.textContent = state ? JSON.stringify(state) : 'null';
+                displayUrl.textContent = window.location.pathname + window.location.search || '/';
+            }
+
+            // ─── Log ─────────────────────────────────────────────
+
+            function addLogEntry(message, stateData) {
+                const empty = logArea.querySelector('.log-empty');
+                if (empty) empty.remove();
+
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+
+                const time = new Date();
+                const timeStr = time.toLocaleTimeString('vi-VN', { hour12: false }) +
+                    '.' + String(time.getMilliseconds()).padStart(3, '0');
+
+                const stateStr = (stateData !== undefined && stateData !== null) ?
+                    ` → state: <span style="color:#7bcb9e;">${JSON.stringify(stateData)}</span>` :
+                    '';
+
+                entry.innerHTML = `
+                        <span class="log-time">${timeStr}</span>
+                        <span class="log-msg">${message} ${stateStr}</span>
+                    `;
+
+                logArea.appendChild(entry);
+                logArea.scrollTop = logArea.scrollHeight;
+
+                // Giới hạn 100 entry
+                while (logArea.children.length > 100) {
+                    logArea.removeChild(logArea.firstChild);
+                }
+            }
+
+            function clearLog() {
+                logArea.innerHTML = `<div class="log-empty">🗑 Đã xóa log</div>`;
+            }
+
+            // ─── Gắn sự kiện cho tab ────────────────────────────
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    // Chuyển tab với pushState
+                    switchTab(tabId, true);
+                });
+            });
+
+            // ─── Nút điều khiển ──────────────────────────────────
+
+            btnPush.addEventListener('click', function() {
+                // Push state với tab hiện tại (giữ nguyên tab)
+                const state = { tab: currentTab, timestamp: Date.now(), action: 'manual' };
+                const url = `?tab=${currentTab}`;
+                history.pushState(state, '', url);
+                displayState.textContent = JSON.stringify(state);
+                displayUrl.textContent = window.location.pathname + window.location.search;
+                addLogEntry(`📥 pushState (giữ nguyên tab ${currentTab})`, state);
+            });
+
+            btnBack.addEventListener('click', () => {
+                history.back();
+                addLogEntry(`⬅️ Gọi history.back() – popstate sẽ kích hoạt`);
+            });
+
+            btnForward.addEventListener('click', () => {
+                history.forward();
+                addLogEntry(`➡️ Gọi history.forward() – popstate sẽ kích hoạt`);
+            });
+
+            btnGoBack2.addEventListener('click', () => {
+                history.go(-2);
+                addLogEntry(`⏪ Gọi history.go(-2) – popstate sẽ kích hoạt`);
+            });
+
+            clearLogBtn.addEventListener('click', clearLog);
+
+            // ─── Đăng ký popstate ───────────────────────────────
+
+            window.addEventListener('popstate', onPopstate);
+
+            // ─── Khởi tạo lần đầu ──────────────────────────────
+
+            // Kiểm tra URL ban đầu có ?tab=... không
+            const params = new URLSearchParams(window.location.search);
+            const initialTab = params.get('tab');
+            if (initialTab && panes[initialTab]) {
+                // Nếu có, chuyển đến tab đó nhưng không pushState (vì đã có state từ server?)
+                // Nhưng thường thì trang load lần đầu không có state, ta sẽ replaceState để đồng bộ
+                const state = { tab: initialTab, timestamp: Date.now() };
+                history.replaceState(state, '', `?tab=${initialTab}`);
+                switchTab(initialTab, false);
+                displayState.textContent = JSON.stringify(state);
+                addLogEntry(`🚀 Khởi tạo với tab ${initialTab} (replaceState)`, state);
+            } else {
+                // Mặc định tab1, dùng replaceState để có state
+                const defaultState = { tab: 'tab1', timestamp: Date.now() };
+                history.replaceState(defaultState, '', '?tab=tab1');
+                switchTab('tab1', false);
+                displayState.textContent = JSON.stringify(defaultState);
+                addLogEntry(`🚀 Khởi tạo mặc định tab1 (replaceState)`, defaultState);
+            }
+
+            // Cập nhật state info cho các pane
+            const currentState = history.state;
+            const stateStr = currentState ? JSON.stringify(currentState) : 'null';
+            if (stateInfo1) stateInfo1.textContent = stateStr;
+            if (stateInfo2) stateInfo2.textContent = stateStr;
+            if (stateInfo3) stateInfo3.textContent = stateStr;
+
+            console.log('✅ Demo popstate với tab đã sẵn sàng!');
+            console.log('ℹ️  Nhấn Back/Forward để thấy popstate kích hoạt.');
+        })();
+    </script>
+
+</body>
+</html>
